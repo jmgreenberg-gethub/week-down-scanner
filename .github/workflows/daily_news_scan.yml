@@ -1,13 +1,13 @@
 name: Daily News Scanner
 
 on:
- schedule:
+  push:
+    branches: [ main ]
+  schedule:
     # Morning run: 7:00 AM EST (12:00 PM UTC)
     - cron: '0 12 * * *'
     # Evening run: 5:00 PM EST (10:00 PM UTC)
     - cron: '0 22 * * *'
-  
-  # Allows manual triggering from GitHub Actions tab
   workflow_dispatch:
 
 jobs:

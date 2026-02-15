@@ -14,7 +14,7 @@ from datetime import datetime
 CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY')
 AIRTABLE_TOKEN = os.getenv('AIRTABLE_TOKEN')
 AIRTABLE_BASE_ID = os.getenv('AIRTABLE_BASE_ID')
-AIRTABLE_TABLE_NAME = 'tblyfNKv9fNn88Wax'
+AIRTABLE_TABLE_NAME = 'tblyfNKv9fNn88Wax'  # Your table ID
 
 # API Endpoints
 CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages'
@@ -31,11 +31,41 @@ def fetch_news_from_claude():
         'content-type': 'application/json'
     }
     
-    prompt = """Search the web for trending news from the last 12-24 hours. Return exactly 5 stories ranked by viral potential for a comedy news show targeting 18-35 year olds. Today is {today}.
+    prompt = """Search the web for trending news from the last 12-24 hours. Return exactly 13 stories ranked by comedy potential for a political satire show (Daily Show/Last Week Tonight style) targeting 18-35 year olds. Today is {today}.
 
-Scoring: HIGH priority for stories trending on Twitter/X/Reddit/TikTok in last 12 hours, stories with absurdity/hypocrisy, stories affecting 18-35 year olds. SKIP stories requiring extensive background.
+PRIORITIZE THESE STORY TYPES (Daily Show editorial focus):
+1. POLITICAL HYPOCRISY - Politicians contradicting themselves, flip-flopping, getting caught
+2. POLICY WITH IMPACT - Healthcare, economy, housing, student debt, workers' rights, climate
+3. CORPORATE ACCOUNTABILITY - Big tech scandals, monopoly abuse, worker exploitation, price gougging
+4. GOVERNMENT DYSFUNCTION - Bureaucratic absurdity, failed rollouts, wasteful spending
+5. INTERNATIONAL NEWS - Foreign policy, global conflicts, diplomatic blunders (US angle)
+6. SYSTEMIC ISSUES - Inequality, corruption, institutional failures
 
-For each story: rank (1-5), headline (under 12 words), summary (2-3 sentences), viral_score (1-100), trending_reason (why it's viral now), comedy_angle (the joke hook), category (Political/Economic/Social/Tech/Culture), sources (array of 2 news URLs).
+DEPRIORITIZE OR SKIP:
+- Celebrity gossip (unless tied to bigger issue like labor strikes, political donations)
+- Pure entertainment news (movie releases, award shows)
+- Viral TikTok trends (unless illustrating generational divide or tech regulation)
+- Sports (unless intersection with politics, labor, or social issues)
+- "Feel-good" human interest stories
+- Stories older than 48 hours (unless breaking development)
+
+SCORING CRITERIA:
+- HIGH (80-100): Clear hypocrisy/contradiction, affects millions, has comedic visual/quote
+- MEDIUM (60-79): Important policy, corporate malfeasance, international significance
+- LOW (40-59): Niche political process, insider baseball
+- SKIP (<40): Pure entertainment, outdated, requires deep background knowledge
+
+For each story provide:
+- rank (1-13, with #1 being most Daily Show-worthy)
+- headline (sharp, under 12 words, Daily Show style)
+- summary (2-3 sentences: what happened, why it matters, who's affected)
+- viral_score (1-100, based on criteria above)
+- trending_reason (why this story is breaking NOW, include specific platform mentions if trending)
+- comedy_angle (the satirical hook: hypocrisy, absurdity, who to skewer, what's the "can you believe this?" moment)
+- category (Political/Economic/Social/Tech/International)
+- sources (array of 2 credible news URLs - prioritize: NYT, WaPo, Politico, Reuters, AP, WSJ, The Guardian, original source documents)
+
+CRITICAL: Focus on SUBSTANCE over virality. A story about healthcare policy affecting 40 million people beats a celebrity TikTok with 100M views.
 
 RETURN ONLY THE JSON ARRAY. DO NOT include any text before or after the array. DO NOT use markdown code blocks. DO NOT explain your reasoning. Your response must be ONLY valid JSON starting with [ and ending with ]. Nothing else.""".format(
         today=datetime.now().strftime('%B %d, %Y')
@@ -43,7 +73,7 @@ RETURN ONLY THE JSON ARRAY. DO NOT include any text before or after the array. D
     
     payload = {
         'model': 'claude-sonnet-4-20250514',
-        'max_tokens': 3000,
+        'max_tokens': 6000,
         'system': 'You are a JSON API. Return only valid JSON arrays. Never include explanatory text, markdown formatting, or preamble. Your entire response must be parseable JSON starting with [ or {.',
         'tools': [
             {

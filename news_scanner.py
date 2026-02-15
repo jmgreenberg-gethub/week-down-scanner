@@ -79,21 +79,36 @@ RETURN ONLY THE JSON ARRAY. DO NOT include any text before or after the array. D
     if not json_text:
         raise ValueError("No text content found in Claude response")
     
-    # Parse the JSON array from Claude
-    # Handle potential markdown code blocks
-    json_text = json_text.strip()
-    if json_text.startswith('```json'):
-        json_text = json_text[7:]
-    if json_text.startswith('```'):
-        json_text = json_text[3:]
-    if json_text.endswith('```'):
-        json_text = json_text[:-3]
+    print(f"📝 Raw response preview: {json_text[:200]}...")
+    
+    # Clean up the JSON text - remove any markdown, explanatory text, etc.
     json_text = json_text.strip()
     
-    stories = json.loads(json_text)
-    print(f"✅ Successfully fetched {len(stories)} stories from Claude")
+    # Remove markdown code blocks if present
+    if '```json' in json_text:
+        json_text = json_text.split('```json')[1].split('```')[0]
+    elif '```' in json_text:
+        json_text = json_text.split('```')[1].split('```')[0]
     
-    return stories
+    # Find the JSON array - look for [ ... ] pattern
+    import re
+    json_match = re.search(r'\[.*\]', json_text, re.DOTALL)
+    if json_match:
+        json_text = json_match.group(0)
+    else:
+        print(f"❌ Could not find JSON array in response: {json_text[:500]}")
+        raise ValueError("No valid JSON array found in Claude response")
+    
+    json_text = json_text.strip()
+    
+    # Parse the JSON
+    try:
+        stories = json.loads(json_text)
+        print(f"✅ Successfully fetched {len(stories)} stories from Claude")
+        return stories
+    except json.JSONDecodeError as e:
+        print(f"❌ JSON parsing failed. Response was: {json_text[:500]}")
+        raise ValueError(f"Failed to parse JSON: {e}")
 
 
 # ==================== AIRTABLE API CALL ====================

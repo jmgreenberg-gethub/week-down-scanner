@@ -14,7 +14,7 @@ from datetime import datetime
 CLAUDE_API_KEY = os.getenv('CLAUDE_API_KEY')
 AIRTABLE_TOKEN = os.getenv('AIRTABLE_TOKEN')
 AIRTABLE_BASE_ID = os.getenv('AIRTABLE_BASE_ID')
-AIRTABLE_TABLE_NAME = 'Daily Stories'  # Your table name
+AIRTABLE_TABLE_NAME = 'tblyfNKv9fNn88Wax'  # Your table name
 
 # API Endpoints
 CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages'

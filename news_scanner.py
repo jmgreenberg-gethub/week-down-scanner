@@ -31,50 +31,49 @@ def fetch_news_from_claude():
         'content-type': 'application/json'
     }
     
-    prompt = """Search the web for trending news from the last 12-24 hours. Return exactly 13 stories ranked by comedy potential for a political satire show (Daily Show/Last Week Tonight style) targeting 18-35 year olds. Today is {today}.
+    prompt = """You are a JSON API. Return only valid JSON arrays with no explanatory text.
+
+Search the web for newsworthy stories from the past 24-48 hours. Return exactly 13 stories ranked by comedy potential for a political satire show (Daily Show/Last Week Tonight style) targeting 18-35 year olds. Today is {today}.
 
 PRIORITIZE THESE STORY TYPES (Daily Show editorial focus):
 1. POLITICAL HYPOCRISY - Politicians contradicting themselves, flip-flopping, getting caught
 2. POLICY WITH IMPACT - Healthcare, economy, housing, student debt, workers' rights, climate
-3. CORPORATE ACCOUNTABILITY - Big tech scandals, monopoly abuse, worker exploitation, price gougging
+3. CORPORATE ACCOUNTABILITY - Big tech scandals, monopoly abuse, worker exploitation, price gouging
 4. GOVERNMENT DYSFUNCTION - Bureaucratic absurdity, failed rollouts, wasteful spending
 5. INTERNATIONAL NEWS - Foreign policy, global conflicts, diplomatic blunders (US angle)
 6. SYSTEMIC ISSUES - Inequality, corruption, institutional failures
 
-DEPRIORITIZE OR SKIP:
-- Celebrity gossip (unless tied to bigger issue like labor strikes, political donations)
-- Pure entertainment news (movie releases, award shows)
-- Viral TikTok trends (unless illustrating generational divide or tech regulation)
-- Sports (unless intersection with politics, labor, or social issues)
-- "Feel-good" human interest stories
-- Stories older than 48 hours (unless breaking development)
+INCLUDE (but rank lower):
+- Celebrity news IF tied to labor, politics, or systemic issues
+- Viral trends IF they illustrate generational divide or policy debates
+- Cultural stories IF they connect to larger societal issues
+
+SKIP ONLY:
+- Pure entertainment (movie releases, award shows) with no controversy
+- "Feel-good" stories without larger significance
 
 SCORING CRITERIA:
-- HIGH (80-100): Clear hypocrisy/contradiction, affects millions, has comedic visual/quote
-- MEDIUM (60-79): Important policy, corporate malfeasance, international significance
-- LOW (40-59): Niche political process, insider baseball
-- SKIP (<40): Pure entertainment, outdated, requires deep background knowledge
+- HIGH (80-100): Clear hypocrisy/contradiction, affects millions, has visual/quote
+- MEDIUM (60-79): Important policy, corporate scandal, international news
+- LOW (40-59): Still newsworthy but more niche
 
 For each story provide:
 - rank (1-13, with #1 being most Daily Show-worthy)
 - headline (sharp, under 12 words, Daily Show style)
 - summary (2-3 sentences: what happened, why it matters, who's affected)
 - viral_score (1-100, based on criteria above)
-- trending_reason (why this story is breaking NOW, include specific platform mentions if trending)
-- comedy_angle (the satirical hook: hypocrisy, absurdity, who to skewer, what's the "can you believe this?" moment)
+- trending_reason (why this is newsworthy now, what's the current hook)
+- comedy_angle (the satirical hook: hypocrisy, absurdity, who to skewer)
 - category (Political/Economic/Social/Tech/International)
-- sources (array of 2 credible news URLs - prioritize: NYT, WaPo, Politico, Reuters, AP, WSJ, The Guardian, original source documents)
+- sources (array of 2 credible news URLs)
 
-CRITICAL: Focus on SUBSTANCE over virality. A story about healthcare policy affecting 40 million people beats a celebrity TikTok with 100M views.
-
-RETURN ONLY THE JSON ARRAY. DO NOT include any text before or after the array. DO NOT use markdown code blocks. DO NOT explain your reasoning. Your response must be ONLY valid JSON starting with [ and ending with ]. Nothing else.""".format(
+RETURN ONLY THE JSON ARRAY. Start with [ and end with ]. No markdown, no code blocks, no explanations.""".format(
         today=datetime.now().strftime('%B %d, %Y')
     )
     
     payload = {
         'model': 'claude-sonnet-4-20250514',
         'max_tokens': 6000,
-        'system': 'You are a JSON API. Return only valid JSON arrays. Never include explanatory text, markdown formatting, or preamble. Your entire response must be parseable JSON starting with [ or {.',
         'tools': [
             {
                 'type': 'web_search_20250305',
@@ -91,6 +90,12 @@ RETURN ONLY THE JSON ARRAY. DO NOT include any text before or after the array. D
     
     print("📡 Calling Claude API with web search...")
     response = requests.post(CLAUDE_API_URL, headers=headers, json=payload, timeout=120)
+    
+    # Print error details if request fails
+    if response.status_code != 200:
+        print(f"❌ API Error: {response.status_code}")
+        print(f"Response: {response.text[:500]}")
+    
     response.raise_for_status()
     
     # Parse Claude response
@@ -151,34 +156,50 @@ def send_to_airtable(stories):
     }
     
     today = datetime.now().strftime('%Y-%m-%d')
+    success_count = 0
     
     for story in stories:
-        # Map story data to Airtable fields
+        # Validate story has required fields
+        if not story.get('headline'):
+            print(f"⚠️  Skipping story #{story.get('rank', '?')} - missing headline")
+            continue
+            
+        # Map story data to Airtable fields with safe defaults
         record = {
             'fields': {
                 'Date': today,
-                'Rank': story.get('rank'),
-                'Headline': story.get('headline'),
-                'Summary': story.get('summary'),
-                'Viral Score': story.get('viral_score'),
-                'Why Trending': story.get('trending_reason'),
-                'Comedy Angle': story.get('comedy_angle'),
-                'Category': story.get('category'),
-                'Source 1': story.get('sources', [None])[0] if len(story.get('sources', [])) > 0 else None,
-                'Source 2': story.get('sources', [None])[1] if len(story.get('sources', [])) > 1 else None,
+                'Rank': story.get('rank', 0),
+                'Headline': story.get('headline', 'Untitled')[:255],  # Airtable field limit
+                'Summary': story.get('summary', '')[:5000],
+                'Viral Score': story.get('viral_score', 50),
+                'Why Trending': story.get('trending_reason', '')[:5000],
+                'Comedy Angle': story.get('comedy_angle', '')[:5000],
+                'Category': story.get('category', 'Other'),
                 'Status': 'To Review'
             }
         }
         
+        # Add sources if they exist
+        sources = story.get('sources', [])
+        if sources and len(sources) > 0:
+            record['fields']['Source 1'] = sources[0]
+        if sources and len(sources) > 1:
+            record['fields']['Source 2'] = sources[1]
+        
         # Remove None values
         record['fields'] = {k: v for k, v in record['fields'].items() if v is not None}
         
-        print(f"📤 Sending story #{story.get('rank')}: {story.get('headline')[:50]}...")
-        response = requests.post(AIRTABLE_API_URL, headers=headers, json=record)
-        response.raise_for_status()
-        print(f"✅ Story #{story.get('rank')} added to Airtable")
+        try:
+            print(f"📤 Sending story #{story.get('rank')}: {story.get('headline', 'Untitled')[:50]}...")
+            response = requests.post(AIRTABLE_API_URL, headers=headers, json=record)
+            response.raise_for_status()
+            print(f"✅ Story #{story.get('rank')} added to Airtable")
+            success_count += 1
+        except Exception as e:
+            print(f"❌ Failed to add story #{story.get('rank')}: {str(e)}")
+            continue
     
-    print(f"\n🎉 All {len(stories)} stories successfully added to Airtable!")
+    print(f"\n🎉 Successfully added {success_count}/{len(stories)} stories to Airtable!")
 
 
 # ==================== MAIN EXECUTION ====================

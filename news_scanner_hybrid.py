@@ -154,17 +154,26 @@ RETURN ONLY JSON ARRAY. No markdown, no explanations. Just [ ... ]"""
     # Clean JSON
     json_text = json_text.strip()
     
+    # Remove markdown code blocks if present
     if '```json' in json_text:
         json_text = json_text.split('```json')[1].split('```')[0]
     elif '```' in json_text:
         json_text = json_text.split('```')[1].split('```')[0]
     
+    json_text = json_text.strip()
+    
+    # Extract JSON array
     import re
     json_match = re.search(r'\[.*\]', json_text, re.DOTALL)
     if json_match:
         json_text = json_match.group(0)
     else:
-        raise ValueError("No JSON array from Claude")
+        # Try without regex - maybe it's already clean
+        if json_text.startswith('[') and json_text.endswith(']'):
+            pass  # Already good
+        else:
+            print(f"❌ Could not find JSON array: {json_text[:500]}")
+            raise ValueError("No JSON array from Claude")
     
     stories = json.loads(json_text.strip())
     print(f"✅ Claude ranked {len(stories)} stories")

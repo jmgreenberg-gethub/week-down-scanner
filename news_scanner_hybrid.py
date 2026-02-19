@@ -42,7 +42,7 @@ def fetch_google_news():
         try:
             feed = feedparser.parse(feed_url)
             
-            for entry in feed.entries[:6]:  # Get top 6 from each category
+            for entry in feed.entries[:4]:  # Get top 4 from each category
                 stories.append({
                     'category_tag': category,
                     'title': entry.get('title', ''),

@@ -27,7 +27,7 @@ GOOGLE_RSS_FEEDS = {
     'healthcare': 'https://news.google.com/rss/search?q=healthcare+when:24h&hl=en-US&gl=US&ceid=US:en',
     'tech_policy': 'https://news.google.com/rss/search?q=technology+policy+when:24h&hl=en-US&gl=US&ceid=US:en',
     'international': 'https://news.google.com/rss/search?q=international+when:24h&hl=en-US&gl=US&ceid=US:en',
-    'climate': 'https://news.google.com/rss/search?q=climate+policy+when:24h&hl=en-US&gl=US&ceid=US:en',
+    'middle_east': 'https://news.google.com/rss/search?q=middle+east+when:24h&hl=en-US&gl=US&ceid=US:en',
 }
 
 
@@ -42,7 +42,7 @@ def fetch_google_news():
         try:
             feed = feedparser.parse(feed_url)
             
-            for entry in feed.entries[:4]:  # Get top 4 from each category
+            for entry in feed.entries[:6]:  # Get top 6 from each category
                 stories.append({
                     'category_tag': category,
                     'title': entry.get('title', ''),
@@ -118,7 +118,7 @@ For each of the top 13 stories:
 RETURN ONLY JSON ARRAY. No markdown, no explanations. Just [ ... ]"""
 
     payload = {
-        'model': 'claude-sonnet-4-20250514',
+        'model': 'claude-haiku-4-5-20251001',
         'max_tokens': 5000,
         'messages': [
             {

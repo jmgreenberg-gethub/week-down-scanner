@@ -84,7 +84,7 @@ def analyze_with_claude(news_stories):
 
 {news_text}
 
-Analyze these stories and select the TOP 20 ranked by comedy potential and Daily Show editorial fit.
+Analyze these stories and select the TOP 13 ranked by comedy potential and Daily Show editorial fit.
 
 PRIORITIES:
 1. Political hypocrisy - contradictions, getting caught
@@ -102,11 +102,11 @@ SCORING:
 CRITICAL - DEDUPLICATION:
 - If multiple articles cover the SAME EVENT, select ONLY the best one
 - Example: If 3 articles about "Senator's crypto scandal", pick the most detailed/quotable one
-- Ensure your 20 stories cover 20 DIFFERENT topics/events
+- Ensure your 13 stories cover 13 DIFFERENT topics/events
 - Variety is key - don't cluster on one theme
 
-For each of the top 20 stories:
-- rank (1-20, #1 = most Daily Show worthy)
+For each of the top 13 stories:
+- rank (1-13, #1 = most Daily Show worthy)
 - headline (sharp, under 12 words, YOUR OWN Daily Show style headline)
 - summary (2-3 sentences: what happened, why it matters, who's affected - YOUR OWN words)
 - viral_score (1-100)
@@ -119,7 +119,7 @@ RETURN ONLY JSON ARRAY. No markdown, no explanations. Just [ ... ]"""
 
     payload = {
         'model': 'claude-sonnet-4-20250514',
-        'max_tokens': 7000,  # Increased for 20 stories
+        'max_tokens': 5000,
         'messages': [
             {
                 'role': 'user',

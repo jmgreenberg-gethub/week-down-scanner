@@ -119,7 +119,7 @@ RETURN ONLY JSON ARRAY. No markdown, no explanations. Just [ ... ]"""
 
     payload = {
         'model': 'claude-haiku-4-5-20251001',
-        'max_tokens': 5000,
+        'max_tokens': 8000,
         'messages': [
             {
                 'role': 'user',
